@@ -10,7 +10,7 @@ import { useViewer } from "@/lib/store";
 import type { Property, ViewMode } from "@/lib/types";
 import { stackFloors } from "./Building";
 import { computeAnchors, LabelLayer } from "./Labels";
-import { sceneBounds, SceneRoot, xrStore } from "./Scene";
+import { poolPosition, sceneBounds, SceneRoot, xrStore } from "./Scene";
 import { walkInput } from "./walkInput";
 
 type Variant = "full" | "embed" | "booth";
@@ -44,7 +44,7 @@ export default function ViewerApp({ property, variant = "full", publicUrl }: { p
         property,
         floors,
         { mode: v.mode, floorIndex: v.floorIndex, showHotspots: v.showHotspots, panoRoomId: v.panoRoomId },
-        hasPool ? [bounds.cx - bounds.w / 4, 0.4, bounds.cz - bounds.d / 2 - 5.6] : null,
+        hasPool && floors.length ? (([x, , z]) => [x, 0.4, z] as [number, number, number])(poolPosition(floors, bounds)) : null,
       ),
     [property, floors, v.mode, v.floorIndex, v.showHotspots, v.panoRoomId, hasPool, bounds],
   );

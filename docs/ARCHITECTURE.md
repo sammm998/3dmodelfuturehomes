@@ -1,6 +1,6 @@
 # PropertyVerse: architecture plan (draft for approval)
 
-Status: **proposal, nothing built yet.** Step 1 of the brief: plan, folder structure and external services.
+Status: **implemented** (see README.md for how to run it and the current limitations). Original plan below.
 
 ---
 

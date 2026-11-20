@@ -61,6 +61,25 @@ export function sceneBounds(floors: StackedFloor[], storeys = 1, unitFloorIndex:
   return { cx, cz: (minZ + maxZ) / 2, w, d, height: top, radius: Math.hypot(w, d, top) / 2 };
 }
 
+/** Unit vector (plan x/y) pointing out of the most glazed facade: the "garden/terrace" side. */
+export function frontDirection(plan: PlanSpec, b: SceneBounds): Vec2 {
+  const wallById = new Map(plan.walls.map((w) => [w.id, w]));
+  let ax = 0,
+    ay = 0;
+  for (const o of plan.openings) {
+    const w = wallById.get(o.wallId);
+    if (!w?.exterior || (o.type !== "sliding" && o.type !== "window")) continue;
+    const mx = (w.a[0] + w.b[0]) / 2 - b.cx,
+      my = (w.a[1] + w.b[1]) / 2 - b.cz;
+    const horizontal = Math.abs(w.b[0] - w.a[0]) > Math.abs(w.b[1] - w.a[1]);
+    const wt = o.width * (o.type === "sliding" ? 2 : 1);
+    if (horizontal) ay += Math.sign(my) * wt;
+    else ax += Math.sign(mx) * wt;
+  }
+  const l = Math.hypot(ax, ay);
+  return l > 1e-6 ? [ax / l, ay / l] : [0, 1];
+}
+
 /** Pick a natural start point for walking: just inside the entrance door, else the living room. */
 export function walkStart(plan: PlanSpec): { pos: Vec2; look: Vec2 } {
   const living = plan.rooms.find((r) => r.type === "living") ?? plan.rooms.find((r) => r.type !== "stairs") ?? plan.rooms[0];
@@ -103,7 +122,7 @@ export function Scene({ property, floors, bounds, embedded, anchors }: { propert
       <PerformanceMonitor onDecline={() => setLowPerf(true)} onIncline={() => setLowPerf(false)} />
       <AdaptiveDpr pixelated={false} />
       <Lights property={property} bounds={bounds} hour={sunHour} />
-      {!inAR && mode !== "pano" && <Ground property={property} bounds={bounds} hasPool={hasPool && mode === "exterior"} />}
+      {!inAR && mode !== "pano" && <Ground property={property} bounds={bounds} hasPool={hasPool && mode === "exterior"} floors={floors} />}
       {!inAR && mode !== "pano" && <GradientSky />}
       {!inAR && mode !== "pano" && <fog attach="fog" args={["#e6ecf1", 120, 520]} />}
       <Environment resolution={128} frames={1} environmentIntensity={0.55}>
@@ -222,7 +241,15 @@ function Lights({ property, bounds, hour }: { property: Property; bounds: SceneB
 
 // ---------------- ground / map ----------------
 
-function Ground({ property, bounds, hasPool }: { property: Property; bounds: SceneBounds; hasPool: boolean }) {
+/** Illustrative pool in front of the main glazed facade. */
+export function poolPosition(floors: StackedFloor[], b: SceneBounds): [number, number, number] {
+  const f = frontDirection(floors[0].plan, b);
+  const ext = Math.abs(f[0]) > Math.abs(f[1]) ? b.w / 2 : b.d / 2;
+  const dist = ext + 3 + 2.6;
+  return [b.cx + f[0] * dist, -0.25, b.cz + f[1] * dist];
+}
+
+function Ground({ property, bounds, hasPool, floors }: { property: Property; bounds: SceneBounds; hasPool: boolean; floors: StackedFloor[] }) {
   const google = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
   const mapbox = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
   const hasGeo = property.lat != null && property.lng != null;
@@ -261,7 +288,7 @@ function Ground({ property, bounds, hasPool }: { property: Property; bounds: Sce
         <meshStandardMaterial color="#d8d0c2" roughness={0.9} />
       </mesh>
       {hasPool && (
-        <group position={[bounds.cx - bounds.w / 4, -0.25, bounds.cz - bounds.d / 2 - pad - 2.6]}>
+        <group position={poolPosition(floors, bounds)} rotation-y={Math.abs(frontDirection(floors[0].plan, bounds)[0]) > 0.7 ? Math.PI / 2 : 0}>
           <mesh rotation-x={-Math.PI / 2} position={[0, 0.005, 0]} receiveShadow>
             <planeGeometry args={[9.6, 4.6]} />
             <meshStandardMaterial color="#e9e3d8" roughness={0.8} />
@@ -341,7 +368,12 @@ function CameraRig({ floors, bounds, property }: { floors: StackedFloor[]; bound
     camera.updateProjectionMatrix();
     const el = floor.elevation;
     if (mode === "exterior") {
-      c.setLookAt(bounds.cx + E * 1.15, bounds.height * 0.6 + E * 0.5, bounds.cz + E * 1.35, bounds.cx, bounds.height * 0.4, bounds.cz, true);
+      // three-quarter view onto the most glazed facade
+      const f = frontDirection(floors[0].plan, bounds);
+      const a = Math.PI / 5;
+      const dx = f[0] * Math.cos(a) - f[1] * Math.sin(a),
+        dz = f[0] * Math.sin(a) + f[1] * Math.cos(a);
+      c.setLookAt(bounds.cx + dx * E * 1.75, bounds.height * 0.6 + E * 0.5, bounds.cz + dz * E * 1.75, bounds.cx, bounds.height * 0.4, bounds.cz, true);
     } else if (mode === "dollhouse") {
       c.setLookAt(ub.cx + Du * 0.75, el + Du * 1.05, ub.cz + Du * 0.95, ub.cx, el + 0.8, ub.cz, true);
     } else if (mode === "plan") {

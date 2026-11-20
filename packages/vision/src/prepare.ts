@@ -74,16 +74,18 @@ export async function imageStats(data: Buffer): Promise<ImageStats> {
 }
 
 export async function dominantColor(data: Buffer, region: "bottom" | "middle" | "all" = "all"): Promise<string> {
-  const img = sharp(data, { failOn: "none" }).rotate();
-  const meta = await img.metadata();
+  data = await sharp(data, { failOn: "none" }).rotate().toBuffer();
+  const meta = await sharp(data).metadata();
   const w = meta.width ?? 1,
     h = meta.height ?? 1;
   const top = region === "bottom" ? Math.floor(h * 0.72) : region === "middle" ? Math.floor(h * 0.25) : 0;
   const height = region === "bottom" ? h - top : region === "middle" ? Math.floor(h * 0.3) : h;
-  const { dominant } = await sharp(data, { failOn: "none" })
-    .rotate()
+  // materialise the crop first: stats() would otherwise describe the whole input image
+  const crop = await sharp(data, { failOn: "none" })
     .extract({ left: 0, top, width: w, height: Math.max(1, height) })
-    .stats();
+    .png()
+    .toBuffer();
+  const { dominant } = await sharp(crop).stats();
   const hex = (n: number) => n.toString(16).padStart(2, "0");
   return `#${hex(dominant.r)}${hex(dominant.g)}${hex(dominant.b)}`;
 }
