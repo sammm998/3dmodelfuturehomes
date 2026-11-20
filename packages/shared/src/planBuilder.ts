@@ -1,5 +1,5 @@
-import { polygonArea } from "./geometry.js";
-import type { Opening, PlanRoom, PlanSpec, Provenance, RoomType, Vec2, Wall } from "./schemas.js";
+import { polygonArea } from "./geometry";
+import type { Opening, PlanRoom, PlanSpec, Provenance, RoomType, Vec2, Wall } from "./schemas";
 
 /** Axis-aligned room rectangle in metres: [x0, y0, x1, y1]. */
 export interface RectRoom {

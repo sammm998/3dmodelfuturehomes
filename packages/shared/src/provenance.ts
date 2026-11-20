@@ -1,4 +1,4 @@
-import type { Provenance } from "./schemas.js";
+import type { Provenance } from "./schemas";
 
 export const PROVENANCE_LABEL: Record<Provenance, { short: string; long: string }> = {
   measured: {

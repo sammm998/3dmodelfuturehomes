@@ -1,5 +1,5 @@
-import { buildRectPlan, centerPlan } from "./planBuilder.js";
-import type { PlanSpec } from "./schemas.js";
+import { buildRectPlan, centerPlan } from "./planBuilder";
+import type { PlanSpec } from "./schemas";
 
 /**
  * Demo property used by the seed ("Villa Serena", fictional).

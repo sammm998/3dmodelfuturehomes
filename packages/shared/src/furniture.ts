@@ -1,5 +1,5 @@
-import { bounds, dist, lerp } from "./geometry.js";
-import type { PlanRoom, PlanSpec, Vec2 } from "./schemas.js";
+import { bounds, dist, lerp } from "./geometry";
+import type { PlanRoom, PlanSpec, Vec2 } from "./schemas";
 
 export type FurnitureKind =
   | "bed"

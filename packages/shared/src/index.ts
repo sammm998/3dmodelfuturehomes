@@ -1,10 +1,10 @@
-export * from "./schemas.js";
-export * from "./geometry.js";
-export * from "./planBuilder.js";
-export * from "./generator.js";
-export * from "./furniture.js";
-export * from "./provenance.js";
-export * from "./demo.js";
+export * from "./schemas";
+export * from "./geometry";
+export * from "./planBuilder";
+export * from "./generator";
+export * from "./furniture";
+export * from "./provenance";
+export * from "./demo";
 
 export const slugify = (s: string) =>
   s

@@ -1,4 +1,4 @@
-import type { Opening, PlanSpec, Vec2, Wall } from "./schemas.js";
+import type { Opening, PlanSpec, Vec2, Wall } from "./schemas";
 
 export const sub = (a: Vec2, b: Vec2): Vec2 => [a[0] - b[0], a[1] - b[1]];
 export const add = (a: Vec2, b: Vec2): Vec2 => [a[0] + b[0], a[1] + b[1]];

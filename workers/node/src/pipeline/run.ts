@@ -16,6 +16,7 @@ import {
   fileUrl,
   connection,
   storeMedia,
+  uniqueSlug,
 } from "@pv/server";
 import { createVisionProvider, dominantColor, type FloorplanSemantics } from "@pv/vision";
 import type { Redis } from "ioredis";
@@ -88,6 +89,11 @@ export async function runPipeline(job: PipelineJob) {
             JSON.stringify(listing), listing.adapter,
           ],
         );
+        // the slug was derived from the URL at import time; use the real title now (no public links exist yet)
+        const cur = await one("select slug, published_at from properties where id=$1", [propertyId]);
+        if (!cur.published_at && job.mode === "url") {
+          await q("update properties set slug=$2 where id=$1", [propertyId, await uniqueSlug(listing.title)]);
+        }
         listingMedia = [
           ...listing.images.map((i, k) => ({ url: i.url, kind: "image" as const, alt: i.alt, sort: k })),
           ...listing.floorplans.map((f, k) => ({ url: f.url, kind: (/\.pdf/i.test(f.url) ? "pdf" : "floorplan") as "pdf" | "floorplan", alt: f.label ?? "floor plan", sort: 1000 + k })),

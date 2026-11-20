@@ -1,5 +1,5 @@
-import { buildRectPlan, centerPlan, type RectRoom } from "./planBuilder.js";
-import type { PlanSpec } from "./schemas.js";
+import { buildRectPlan, centerPlan, type RectRoom } from "./planBuilder";
+import type { PlanSpec } from "./schemas";
 
 export interface GeneratorInput {
   sqm: number | null;
