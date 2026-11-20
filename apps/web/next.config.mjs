@@ -1,8 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: "standalone",
   transpilePackages: ["@pv/shared"],
-  outputFileTracingRoot: new URL("../../", import.meta.url).pathname,
   reactStrictMode: true,
   async headers() {
     return [
