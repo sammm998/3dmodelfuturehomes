@@ -1,0 +1,8 @@
+packages:
+  - apps/*
+  - workers/node
+  - packages/*
+onlyBuiltDependencies:
+  - sharp
+  - esbuild
+  - unrs-resolver

@@ -1,0 +1,11 @@
+node_modules
+.next
+dist
+.env
+*.log
+.turbo
+__pycache__
+.venv
+.pytest_cache
+*.egg-info
+data/
