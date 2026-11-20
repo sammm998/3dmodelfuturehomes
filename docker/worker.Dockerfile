@@ -4,7 +4,7 @@ ENV PNPM_HOME=/pnpm PATH=/pnpm:$PATH CI=true NEXT_TELEMETRY_DISABLED=1
 # optional: corporate/proxy CA certificates (put *.crt files in docker/certs/)
 COPY docker/certs/ /usr/local/share/ca-certificates/extra/
 RUN (command -v update-ca-certificates >/dev/null && update-ca-certificates >/dev/null 2>&1) || true
-ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
+# behind a TLS-intercepting proxy also set NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
 RUN npm install -g pnpm@10.28.0
 WORKDIR /app
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml tsconfig.base.json ./

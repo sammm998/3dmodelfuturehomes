@@ -10,7 +10,8 @@
     "seed": "tsx src/cli/seed.ts",
     "seed:if-empty": "tsx src/cli/seed.ts --if-empty",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "predeploy": "tsx src/cli/migrate.ts && tsx src/cli/seed.ts --if-empty"
   },
   "dependencies": {
     "@fastify/cors": "^11.4.3",

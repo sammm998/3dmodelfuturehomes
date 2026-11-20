@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+import re
 import signal
 import traceback
 
@@ -98,7 +99,8 @@ async def main():
     redis = os.environ.get("REDIS_URL", "redis://localhost:6379")
     conc = int(os.environ.get("PY_WORKER_CONCURRENCY", "2"))
     worker = Worker("py", process, {"connection": redis, "concurrency": conc, "lockDuration": 300000})
-    log.info("python worker listening on queue 'py' (%s), providers: %s", redis, [d["name"] for d in describe() if d["available"]])
+    safe = re.sub(r"//[^@/]*@", "//***@", redis)  # never log credentials
+    log.info("python worker listening on queue 'py' (%s), providers: %s", safe, [d["name"] for d in describe() if d["available"]])
     stop = asyncio.Event()
     loop = asyncio.get_running_loop()
     for s in (signal.SIGINT, signal.SIGTERM):
