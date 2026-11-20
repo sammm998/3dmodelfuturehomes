@@ -176,8 +176,12 @@ async function createProperty(opts: {
 async function main() {
   await migrate();
   await ensureBucket();
-  if (process.argv.includes("--if-empty") && (await one("select 1 from agencies limit 1"))) {
-    console.log("seed: data present, skipping (--if-empty)");
+  // --if-empty: skip when the demo data is present and current (demo villa has a facade spec)
+  const current = await one(
+    "select 1 from buildings b join properties p on p.id=b.property_id where p.slug='villa-serena-demo' and b.massing ? 'facade'",
+  );
+  if (process.argv.includes("--if-empty") && current) {
+    console.log("seed: demo data present and current, skipping (--if-empty)");
     await pool.end();
     process.exit(0);
   }
@@ -185,7 +189,7 @@ async function main() {
 
   const agency = await one<{ id: string }>(
     `insert into agencies(slug, name, theme, whatsapp, booking_url, website) values ('future-homes','Future Homes',$1,$2,$3,$4)
-     on conflict (slug) do update set theme=excluded.theme, name=excluded.name returning id`,
+     on conflict (slug) do update set slug=excluded.slug returning id`, // keeps an edited theme
     [JSON.stringify(FH_THEME), process.env.SEED_AGENCY_WHATSAPP ?? "34600000000", process.env.SEED_AGENCY_BOOKING_URL ?? "https://futurehomesinternational.com/contact/", "https://futurehomesinternational.com"],
   );
   // Content rights for the agency's own site. Revoke in Admin → Sources if this does not apply.
