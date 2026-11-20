@@ -1,0 +1,34 @@
+{
+  "name": "@pv/worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "start": "tsx src/main.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@gltf-transform/core": "^4.5.1",
+    "@gltf-transform/extensions": "^4.5.1",
+    "@gltf-transform/functions": "^4.5.1",
+    "@pv/server": "workspace:*",
+    "@pv/shared": "workspace:*",
+    "@pv/vision": "workspace:*",
+    "bullmq": "^6.7.8",
+    "cheerio": "^1.2.0",
+    "draco3dgltf": "^1.5.9",
+    "ioredis": "^6.0.0",
+    "playwright-core": "1.63.0",
+    "robots-parser": "^3.0.1",
+    "sharp": "^0.35.5",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.1"
+  }
+}

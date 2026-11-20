@@ -1,0 +1,9 @@
+{
+  "identities": [
+    {
+      "name": "propertyverse",
+      "credentials": [{ "accessKey": "propertyverse", "secretKey": "propertyverse-secret" }],
+      "actions": ["Admin", "Read", "List", "Tagging", "Write"]
+    }
+  ]
+}
