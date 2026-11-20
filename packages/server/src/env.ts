@@ -7,6 +7,8 @@ export const env = {
     bucket: process.env.S3_BUCKET || "propertyverse",
     accessKey: process.env.S3_ACCESS_KEY || "propertyverse",
     secretKey: process.env.S3_SECRET_KEY || "propertyverse-secret",
+    /** path-style (MinIO/SeaweedFS) vs virtual-hosted (AWS, Railway buckets) */
+    forcePathStyle: (process.env.S3_FORCE_PATH_STYLE ?? "true") !== "false",
   },
   publicWebUrl: process.env.PUBLIC_WEB_URL || "http://localhost:3000",
   publicApiUrl: process.env.PUBLIC_API_URL || "http://localhost:4000",

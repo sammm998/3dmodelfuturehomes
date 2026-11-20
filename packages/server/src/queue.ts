@@ -2,7 +2,8 @@ import { Queue, QueueEvents } from "bullmq";
 import { Redis } from "ioredis";
 import { env } from "./env.js";
 
-export const connection = () => new Redis(env.redisUrl, { maxRetriesPerRequest: null });
+// family 0 = resolve IPv4 and IPv6 (Railway private networking is IPv6)
+export const connection = () => new Redis(env.redisUrl, { maxRetriesPerRequest: null, family: 0 });
 
 export const QUEUE_PIPELINE = "pipeline"; // Node orchestrator
 export const QUEUE_PY = "py"; // Python CV/3D worker

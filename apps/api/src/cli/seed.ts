@@ -175,6 +175,11 @@ async function createProperty(opts: {
 async function main() {
   await migrate();
   await ensureBucket();
+  if (process.argv.includes("--if-empty") && (await one("select 1 from agencies limit 1"))) {
+    console.log("seed: data present, skipping (--if-empty)");
+    await pool.end();
+    process.exit(0);
+  }
   await putObject("library/README.txt", "Drop CC0 GLB furniture here (see README: furniture library).", "text/plain");
 
   const agency = await one<{ id: string }>(

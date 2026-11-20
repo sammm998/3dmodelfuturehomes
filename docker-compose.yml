@@ -57,7 +57,7 @@ services:
     ports: ["8333:8333"]
 
   api:
-    build: { context: ., dockerfile: docker/node.Dockerfile, target: api }
+    build: { context: ., dockerfile: docker/api.Dockerfile }
     environment: *env
     ports: ["4000:4000"]
     depends_on:
@@ -67,7 +67,7 @@ services:
     restart: on-failure
 
   seed:
-    build: { context: ., dockerfile: docker/node.Dockerfile, target: api }
+    build: { context: ., dockerfile: docker/api.Dockerfile }
     environment: *env
     command: ["pnpm", "seed"]
     depends_on:
@@ -75,11 +75,7 @@ services:
     restart: on-failure:10
 
   worker-node:
-    build:
-      context: .
-      dockerfile: docker/node.Dockerfile
-      target: worker
-      args: { NODE_IMAGE: "mcr.microsoft.com/playwright:v1.63.0-noble" }
+    build: { context: ., dockerfile: docker/worker.Dockerfile }
     environment: *env
     depends_on:
       postgres: { condition: service_healthy }
@@ -108,8 +104,7 @@ services:
   web:
     build:
       context: .
-      dockerfile: docker/node.Dockerfile
-      target: web
+      dockerfile: docker/web.Dockerfile
       args:
         NEXT_PUBLIC_API_URL: ${PUBLIC_API_URL:-http://localhost:4000}
         NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY:-}
