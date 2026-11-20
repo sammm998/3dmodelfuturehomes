@@ -4,6 +4,7 @@
 #   s3     http://localhost:8333      S3-compatible object storage (SeaweedFS)
 # GPU Gaussian Splatting worker: docker compose --profile gpu up
 x-env: &env
+  HOST: 0.0.0.0
   DATABASE_URL: postgres://propertyverse:propertyverse@postgres:5432/propertyverse
   REDIS_URL: redis://redis:6379
   S3_ENDPOINT: http://s3:8333
@@ -111,6 +112,7 @@ services:
         NEXT_PUBLIC_MAPBOX_TOKEN: ${MAPBOX_TOKEN:-}
     environment:
       INTERNAL_API_URL: http://api:4000
+      HOST: 0.0.0.0
       PUBLIC_WEB_URL: ${PUBLIC_WEB_URL:-http://localhost:3000}
     ports: ["3000:3000"]
     depends_on: [api]

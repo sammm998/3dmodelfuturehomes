@@ -18,7 +18,7 @@ import {
   storeMedia,
   uniqueSlug,
 } from "@pv/server";
-import { createVisionProvider, dominantColor, type FloorplanSemantics } from "@pv/vision";
+import { createVisionProvider, type FloorplanSemantics } from "@pv/vision";
 import type { Redis } from "ioredis";
 import { scrapeListing } from "../scrape/browser.js";
 import { assertDomainAllowed, robotsAllows, ScrapeNotAllowed, throttle } from "../scrape/policy.js";
@@ -395,17 +395,30 @@ export async function runPipeline(job: PipelineJob) {
 
       // 10. exterior -------------------------------------------------------
       await step("exterior", async () => {
-        const ext = (await mediaOf(propertyId, ["image"])).filter((m) => m.classification?.class === "exterior").slice(0, 4);
-        let facade = "#efe9df";
-        if (ext.length) facade = await dominantColor(await getObject(ext[0].s3_key), "middle");
+        // most confident exterior photos first: they drive the facade
+        const ext = (await mediaOf(propertyId, ["image"]))
+          .filter((m) => m.classification?.class === "exterior")
+          .sort((a, b) => (b.class_confidence ?? 0) - (a.class_confidence ?? 0))
+          .slice(0, 4);
         const b = await one("select * from buildings where property_id=$1", [propertyId]);
         const floors = await floorsQ();
+        let spec: any = null;
+        if (ext.length) {
+          spec = await vision.exteriorSpec(await Promise.all(ext.map(async (m) => ({ data: await getObject(m.s3_key), hint: fileHint(m) }))));
+        }
+        // whole houses: trust the photos for the storey count when no plan exists for some floors
+        let floorsCount = b.floors_count;
+        if (spec && b.unit_floor_index == null && spec.storeys > 0 && spec.confidence >= 0.5) floorsCount = Math.max(floors.length, Math.round(spec.storeys));
+        await q("update buildings set floors_count=$2 where id=$1", [b.id, floorsCount]);
         const massing = {
-          facadeColor: facade,
+          facadeColor: spec?.wallColor ?? "#efe9df",
           facadeFromPhoto: ext.length > 0,
-          roof: "flat",
-          floorsCount: b.floors_count,
-          contextFloors: Math.max(0, b.floors_count - floors.length),
+          roof: spec?.roof ?? "flat",
+          facade: spec,
+          heroMediaId: ext[0]?.id ?? null,
+          photoMediaIds: ext.map((m) => m.id),
+          floorsCount,
+          contextFloors: Math.max(0, floorsCount - floors.length),
           provenance: "illustrative",
         };
         await q("update buildings set massing=$2 where id=$1", [b.id, JSON.stringify(massing)]);
@@ -419,7 +432,9 @@ export async function runPipeline(job: PipelineJob) {
             geo = ` · geocoded ${property.location}`;
           }
         }
-        return `facade ${facade}${ext.length ? " from photos" : " (default)"}, ${b.floors_count} storeys${geo}`;
+        return spec
+          ? `${spec.style}: ${spec.wallMaterial} ${spec.wallColor}, ${spec.roof} roof, ${spec.balconies !== "none" ? spec.balconies + " balconies, " : ""}${floorsCount} storeys (from ${ext.length} photos, ${vision.name}${spec.confidence < 0.5 ? ", low confidence" : ""})${geo}`
+          : `no exterior photos: default facade, ${floorsCount} storeys${geo}`;
       });
     } else {
       for (const k of ["ingest", "classify", "structure", "floorplan", "match", "materials", "panorama", "splat", "exterior"] as const)

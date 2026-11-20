@@ -222,3 +222,29 @@ export const Hotspot = z.object({
   body: z.string().nullable(),
 });
 export type Hotspot = z.infer<typeof Hotspot>;
+
+const Hex = z.string().describe("#rrggbb");
+/** Exterior description read from listing photos (vision model). Drives the 3D facade, roof and extras. */
+export const FacadeSpec = z.object({
+  storeys: z.number().describe("visible storeys above ground, including the ground floor"),
+  roof: z.enum(["flat", "gable", "hip", "shed", "mansard"]),
+  roofMaterial: z.enum(["membrane", "concrete", "clay_tiles", "slate", "metal"]),
+  roofColor: Hex,
+  wallMaterial: z.enum(["render", "stone", "brick", "wood", "concrete", "glass"]),
+  wallColor: Hex,
+  accentMaterial: z.enum(["none", "stone", "wood", "brick", "concrete", "metal"]),
+  accentColor: Hex,
+  accentPlacement: z.enum(["none", "ground_floor", "upper_floor", "entrance_wall"]),
+  windowStyle: z.enum(["punched", "large_glazing", "floor_to_ceiling"]),
+  windowFrameColor: Hex,
+  shutters: z.boolean(),
+  shutterColor: Hex,
+  balconies: z.enum(["none", "glass", "metal", "masonry"]),
+  roofTerrace: z.boolean(),
+  pergola: z.boolean(),
+  pool: z.boolean(),
+  garden: z.boolean(),
+  style: z.string().describe("2-4 words, e.g. 'modern mediterranean villa'"),
+  confidence: z.number(),
+});
+export type FacadeSpec = z.infer<typeof FacadeSpec>;

@@ -1,5 +1,6 @@
 import type { RoomType } from "@pv/shared";
 import { dominantColor, imageStats } from "./prepare.js";
+import type { ExteriorSpec } from "./types.js";
 import type { ClassificationOut, FloorplanSemantics, MaterialsOut, RoomMatch, VisionImage, VisionProvider } from "./types.js";
 
 const ROOM_WORDS: [RoomType, RegExp][] = [
@@ -62,6 +63,17 @@ export class HeuristicVision implements VisionProvider {
     const c = await this.classify(img);
     const r = rooms.find((x) => x.type === c.roomType);
     return { roomId: r?.id ?? null, confidence: r ? 0.4 : 0, reason: r ? `room type ${c.roomType} from filename/alt text` : "no match" };
+  }
+
+  async exteriorSpec(imgs: VisionImage[]): Promise<ExteriorSpec> {
+    // offline: only colours can be estimated; geometry features use neutral defaults
+    const wall = imgs[0] ? await dominantColor(imgs[0].data, "middle") : "#efe9df";
+    return {
+      storeys: 0, roof: "flat", roofMaterial: "membrane", roofColor: "#d9d4cb", wallMaterial: "render", wallColor: wall,
+      accentMaterial: "none", accentColor: "#b9a48a", accentPlacement: "none", windowStyle: "punched", windowFrameColor: "#3a3a3a",
+      shutters: false, shutterColor: "#ffffff", balconies: "none", roofTerrace: false, pergola: false, pool: false, garden: true,
+      style: "contemporary", confidence: 0.2,
+    };
   }
 
   async materials(img: VisionImage): Promise<MaterialsOut> {

@@ -16,6 +16,8 @@ export interface ViewerState {
   tourPaused: boolean;
   /** pending walk teleport (plan metres) */
   walkTarget: [number, number] | null;
+  /** room the walk camera is in (plan room id on a floor) */
+  walkRoom: { floorId: string; planRoomId: string } | null;
   setMode: (m: ViewMode) => void;
   setFloor: (i: number) => void;
   set: (p: Partial<ViewerState>) => void;
@@ -34,6 +36,7 @@ export const useViewer = create<ViewerState>((set) => ({
   booth: false,
   tourPaused: false,
   walkTarget: null,
+  walkRoom: null,
   setMode: (mode) => set({ mode, selectedHotspot: null }),
   setFloor: (floorIndex) => set({ floorIndex }),
   set: (p) => set(p),

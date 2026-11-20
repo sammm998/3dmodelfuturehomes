@@ -10,6 +10,7 @@ import * as SunCalc from "suncalc";
 import {
   collisionSegments,
   moveWithCollisions,
+  roomAt,
   polygonCentroid,
   lerp as lerp2,
   type PlanSpec,
@@ -93,7 +94,8 @@ export function walkStart(plan: PlanSpec): { pos: Vec2; look: Vec2 } {
     let n: Vec2 = [-(w.b[1] - w.a[1]) / L, (w.b[0] - w.a[0]) / L];
     // normal must point inside (towards the living room)
     if ((lc[0] - c[0]) * n[0] + (lc[1] - c[1]) * n[1] < 0) n = [-n[0], -n[1]];
-    return { pos: [c[0] + n[0] * 1.0, c[1] + n[1] * 1.0], look: lc };
+    // look straight into the house through the door (looking at the living room centroid can face a wall)
+    return { pos: [c[0] + n[0] * 1.0, c[1] + n[1] * 1.0], look: [c[0] + n[0] * 4, c[1] + n[1] * 4] };
   }
   return { pos: lc, look: [lc[0] + 1, lc[1]] };
 }
@@ -113,7 +115,10 @@ export function Scene({ property, floors, bounds, embedded, anchors }: { propert
     gl.toneMapping = composerOn ? THREE.NoToneMapping : THREE.ACESFilmicToneMapping;
   }, [gl, composerOn]);
   const hasPool = useMemo(
-    () => property.features?.some((f) => /pool|piscina/i.test(f)) || property.media.some((m) => m.classification?.amenity === "pool"),
+    () =>
+      !!property.buildings[0]?.massing?.facade?.pool ||
+      property.features?.some((f) => /pool|piscina/i.test(f)) ||
+      property.media.some((m) => m.classification?.amenity === "pool"),
     [property],
   );
 
@@ -468,6 +473,7 @@ function WalkController({ floor }: { floor: StackedFloor }) {
   const yaw = useRef(0);
   const pitch = useRef(0);
   const target = useRef<Vec2 | null>(null);
+  const lastRoomCheck = useRef(1);
   const walkTarget = useViewer((s) => s.walkTarget);
 
   useEffect(() => {
@@ -565,6 +571,15 @@ function WalkController({ floor }: { floor: StackedFloor }) {
       }
     }
     const np = moveWithCollisions(p, delta, segs, 0.25);
+    // publish the current room (for the real-photo strip) when it changes
+    lastRoomCheck.current += dt;
+    if (lastRoomCheck.current > 0.3) {
+      lastRoomCheck.current = 0;
+      const r = roomAt(floor.plan, np);
+      const cur = useViewer.getState().walkRoom;
+      if ((r?.id ?? null) !== (cur?.planRoomId ?? null) || cur?.floorId !== floor.id)
+        useViewer.setState({ walkRoom: r ? { floorId: floor.id, planRoomId: r.id } : null });
+    }
     camera.position.set(np[0], floor.elevation + 1.6, np[1]);
     camera.quaternion.setFromEuler(new THREE.Euler(pitch.current, yaw.current, 0, "YXZ"));
   });

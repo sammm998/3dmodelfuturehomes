@@ -1,7 +1,8 @@
 import OpenAI from "openai";
 import { z } from "zod";
 import { prepareImage } from "./prepare.js";
-import { CLASSIFY_PROMPT, FLOORPLAN_PROMPT, MATCH_PROMPT, MATERIALS_PROMPT } from "./prompts.js";
+import { CLASSIFY_PROMPT, EXTERIOR_PROMPT, FLOORPLAN_PROMPT, MATCH_PROMPT, MATERIALS_PROMPT } from "./prompts.js";
+import { FacadeSpec as ExteriorSpec } from "@pv/shared";
 import {
   ClassificationOut,
   FloorplanSemantics,
@@ -32,16 +33,23 @@ export class OpenAIVision implements VisionProvider {
     this.client = new OpenAI();
   }
 
-  private async ask<T extends z.ZodType>(img: VisionImage, prompt: string, schema: T, name: string): Promise<z.infer<T>> {
-    const { b64, mime } = await prepareImage(img.data);
+  private async ask<T extends z.ZodType>(img: VisionImage | VisionImage[], prompt: string, schema: T, name: string): Promise<z.infer<T>> {
+    const imgs = Array.isArray(img) ? img : [img];
+    const parts = await Promise.all(
+      imgs.map(async (im) => {
+        const { b64, mime } = await prepareImage(im.data);
+        return { type: "image_url" as const, image_url: { url: `data:${mime};base64,${b64}` } };
+      }),
+    );
+    const hints = imgs.map((i) => i.hint).filter(Boolean).join(" | ");
     const res = await this.client.chat.completions.create({
       model: this.model,
       messages: [
         {
           role: "user",
           content: [
-            { type: "text", text: prompt + (img.hint ? `\n\nFile name / alt text: ${img.hint.slice(0, 300)}` : "") },
-            { type: "image_url", image_url: { url: `data:${mime};base64,${b64}` } },
+            { type: "text", text: prompt + (hints ? `\n\nFile names / alt text: ${hints.slice(0, 500)}` : "") },
+            ...parts,
           ],
         },
       ],
@@ -66,5 +74,8 @@ export class OpenAIVision implements VisionProvider {
   }
   materials(img: VisionImage) {
     return this.ask(img, MATERIALS_PROMPT, MaterialsOut, "materials");
+  }
+  exteriorSpec(imgs: VisionImage[]) {
+    return this.ask(imgs.slice(0, 4), EXTERIOR_PROMPT, ExteriorSpec, "exterior");
   }
 }

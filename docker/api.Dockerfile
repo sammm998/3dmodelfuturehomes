@@ -5,6 +5,8 @@ ENV PNPM_HOME=/pnpm PATH=/pnpm:$PATH CI=true NEXT_TELEMETRY_DISABLED=1
 COPY docker/certs/ /usr/local/share/ca-certificates/extra/
 RUN (command -v update-ca-certificates >/dev/null && update-ca-certificates >/dev/null 2>&1) || true
 # behind a TLS-intercepting proxy also set NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
+# fonts for server-side SVG rendering (seed floor plan labels)
+RUN apt-get update && apt-get install -y --no-install-recommends fontconfig fonts-dejavu-core && rm -rf /var/lib/apt/lists/*
 RUN npm install -g pnpm@10.28.0
 WORKDIR /app
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml tsconfig.base.json ./

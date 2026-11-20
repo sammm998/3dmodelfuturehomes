@@ -1,7 +1,8 @@
 "use client";
 import { useMemo } from "react";
 import * as THREE from "three";
-import { layoutFurniture, planBounds, type PlanSpec } from "@pv/shared";
+import { layoutFurniture, planBounds, type FacadeSpec, type PlanSpec } from "@pv/shared";
+import { DEFAULT_FACADE, ExteriorDetails } from "./Exterior";
 import type { BuildingRef, ViewMode } from "@/lib/types";
 import { Furniture } from "./Furniture";
 import { buildFloorGeometry, floorSlab } from "./planMesh";
@@ -32,7 +33,11 @@ interface Props {
 }
 
 export function Building({ building, floors, mode, floorIndex, cutHeight, showFurniture, simple }: Props) {
-  const facade = building.massing?.facadeColor ?? "#efe9df";
+  const spec: FacadeSpec = useMemo(
+    () => ({ ...DEFAULT_FACADE, wallColor: building.massing?.facadeColor ?? DEFAULT_FACADE.wallColor, ...(building.massing?.facade ?? {}) }),
+    [building.massing],
+  );
+  const facade = spec.wallColor;
   const topIdx = floors.length - 1;
   return (
     <group>
@@ -53,6 +58,9 @@ export function Building({ building, floors, mode, floorIndex, cutHeight, showFu
             cutAt={cut !== null ? f.elevation + cut : null}
             dim={(mode === "dollhouse" || mode === "plan") && !selected}
             showFurniture={showFurniture && !simple && (mode !== "exterior")}
+            spec={spec}
+            level={i}
+            showDetails={!simple && (mode === "exterior" || mode === "walk")}
           />
         );
       })}
@@ -70,7 +78,13 @@ function FloorMesh({
   cutAt,
   dim,
   showFurniture,
+  spec,
+  level,
+  showDetails,
 }: {
+  spec: FacadeSpec;
+  level: number;
+  showDetails: boolean;
   floor: StackedFloor;
   facade: string;
   isTop: boolean;
@@ -120,10 +134,11 @@ function FloorMesh({
         ))}
       {showRoof && geo.roof && (
         <mesh geometry={geo.roof} castShadow receiveShadow>
-          <meshStandardMaterial color="#e7e1d7" roughness={0.95} />
+          <meshStandardMaterial color={spec.roof === "flat" ? spec.roofColor : "#e7e1d7"} roughness={0.95} />
         </mesh>
       )}
-      {showRoof && geo.parapet && (
+      {showDetails && <ExteriorDetails plan={floor.plan} spec={spec} level={level} isTop={isTop} showRoof={showRoof} />}
+      {showRoof && spec.roof === "flat" && geo.parapet && (
         <mesh geometry={geo.parapet} castShadow>
           <meshStandardMaterial vertexColors roughness={0.9} />
         </mesh>

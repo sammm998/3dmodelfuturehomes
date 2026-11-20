@@ -10,6 +10,7 @@ import { useViewer } from "@/lib/store";
 import type { Property, ViewMode } from "@/lib/types";
 import { stackFloors } from "./Building";
 import { computeAnchors, LabelLayer } from "./Labels";
+import { RealPhotos } from "./Photos";
 import { poolPosition, sceneBounds, SceneRoot, xrStore } from "./Scene";
 import { walkInput } from "./walkInput";
 
@@ -35,7 +36,10 @@ export default function ViewerApp({ property, variant = "full", publicUrl }: { p
   );
   const hasSplat = property.artifacts.some((a) => a.kind === "splat");
   const hasPool = useMemo(
-    () => property.features?.some((f) => /pool|piscina/i.test(f)) || property.media.some((m) => m.classification?.amenity === "pool"),
+    () =>
+      !!building?.massing?.facade?.pool ||
+      property.features?.some((f) => /pool|piscina/i.test(f)) ||
+      property.media.some((m) => m.classification?.amenity === "pool"),
     [property],
   );
   const anchors = useMemo(
@@ -210,6 +214,7 @@ export default function ViewerApp({ property, variant = "full", publicUrl }: { p
       </div>
 
       <ProvenanceBadge p={provenance.level} parts={provenance.parts} />
+      {variant !== "booth" && <RealPhotos property={property} />}
 
       {v.mode === "walk" && variant !== "booth" && <WalkHelp />}
 
@@ -237,7 +242,8 @@ function currentProvenance(property: Property, mode: ViewMode, furniture: boolea
     parts.push({ label: plans.includes("illustrative") ? "Layout generated from listing data" : "Layout from floor plan", p: weakestProvenance(plans) });
     if (mode !== "exterior") parts.push({ label: "Floor materials & wall colours", p: "illustrative" });
     if (mode !== "exterior" && furniture) parts.push({ label: "Furniture", p: "illustrative" });
-    if (mode === "exterior") parts.push({ label: "Facade, roof & surroundings", p: "illustrative" });
+    if (mode === "exterior")
+      parts.push({ label: b.massing?.facade ? "Facade & roof modelled from the listing photos" : "Facade, roof & surroundings", p: "illustrative" });
     if (b.floorsCount > b.floors.length) parts.push({ label: "Other storeys of the building", p: "illustrative" });
     if (photoreal) parts.push({ label: "Photoreal layer", p: property.artifacts.find((a) => a.kind === "splat")?.provenance ?? "reconstructed" });
   }

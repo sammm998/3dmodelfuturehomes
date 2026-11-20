@@ -1,4 +1,4 @@
-import type { AgencyTheme, PlanSpec, Provenance } from "@pv/shared";
+import type { AgencyTheme, FacadeSpec, PlanSpec, Provenance } from "@pv/shared";
 
 export interface ArtifactRef {
   id: string;
@@ -38,7 +38,17 @@ export interface BuildingRef {
   name: string;
   floorsCount: number;
   unitFloorIndex: number | null;
-  massing: { facadeColor?: string; facadeFromPhoto?: boolean; roof?: string; floorsCount?: number; contextFloors?: number; provenance?: Provenance };
+  massing: {
+    facadeColor?: string;
+    facadeFromPhoto?: boolean;
+    roof?: string;
+    facade?: FacadeSpec | null;
+    heroMediaId?: string | null;
+    photoMediaIds?: string[];
+    floorsCount?: number;
+    contextFloors?: number;
+    provenance?: Provenance;
+  };
   artifacts: ArtifactRef[];
   floors: FloorRef[];
 }

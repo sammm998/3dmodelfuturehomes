@@ -2,7 +2,8 @@ import Anthropic from "@anthropic-ai/sdk";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import type { z } from "zod";
 import { prepareImage } from "./prepare.js";
-import { CLASSIFY_PROMPT, FLOORPLAN_PROMPT, MATCH_PROMPT, MATERIALS_PROMPT } from "./prompts.js";
+import { CLASSIFY_PROMPT, EXTERIOR_PROMPT, FLOORPLAN_PROMPT, MATCH_PROMPT, MATERIALS_PROMPT } from "./prompts.js";
+import { FacadeSpec as ExteriorSpec } from "@pv/shared";
 import {
   ClassificationOut,
   FloorplanSemantics,
@@ -28,8 +29,15 @@ export class ClaudeVision implements VisionProvider {
     this.client = new Anthropic(apiKey ? { apiKey } : {});
   }
 
-  private async ask<T extends z.ZodType>(img: VisionImage, prompt: string, schema: T, effort: Effort): Promise<z.infer<T>> {
-    const { b64, mime } = await prepareImage(img.data);
+  private async ask<T extends z.ZodType>(img: VisionImage | VisionImage[], prompt: string, schema: T, effort: Effort): Promise<z.infer<T>> {
+    const imgs = Array.isArray(img) ? img : [img];
+    const blocks = await Promise.all(
+      imgs.map(async (im) => {
+        const { b64, mime } = await prepareImage(im.data);
+        return { type: "image" as const, source: { type: "base64" as const, media_type: mime, data: b64 } };
+      }),
+    );
+    const hints = imgs.map((i) => i.hint).filter(Boolean).join(" | ");
     const res = await this.client.beta.messages.parse({
       model: this.model,
       max_tokens: 16000,
@@ -39,10 +47,7 @@ export class ClaudeVision implements VisionProvider {
       messages: [
         {
           role: "user",
-          content: [
-            { type: "image", source: { type: "base64", media_type: mime, data: b64 } },
-            { type: "text", text: prompt + (img.hint ? `\n\nFile name / alt text (may help): ${img.hint.slice(0, 300)}` : "") },
-          ],
+          content: [...blocks, { type: "text", text: prompt + (hints ? `\n\nFile names / alt text (may help): ${hints.slice(0, 500)}` : "") }],
         },
       ],
     });
@@ -62,5 +67,8 @@ export class ClaudeVision implements VisionProvider {
   }
   materials(img: VisionImage) {
     return this.ask(img, MATERIALS_PROMPT, MaterialsOut, "low");
+  }
+  exteriorSpec(imgs: VisionImage[]) {
+    return this.ask(imgs.slice(0, 4), EXTERIOR_PROMPT, ExteriorSpec, "medium");
   }
 }

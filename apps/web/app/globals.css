@@ -333,3 +333,17 @@ input, select, textarea { font: inherit; }
 .pv-anchor { position: absolute; left: 0; top: 0; will-change: transform; }
 .pv-anchor button { pointer-events: auto; }
 .pv-anchor .pv-hotspot { transform: none; }
+
+/* real photos */
+.pv-photos { position: absolute; left: 16px; bottom: 62px; display: flex; flex-direction: column; gap: 6px; max-width: min(420px, calc(100vw - 32px)); z-index: 4; }
+.pv-photos-label { font-size: 12px; color: #fff; background: var(--glass); border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; align-self: flex-start; backdrop-filter: blur(10px); }
+.pv-photos-label em { font-style: normal; color: var(--pv-accent); }
+.pv-photos-strip { display: flex; gap: 6px; }
+.pv-photos-strip button { width: 72px; height: 54px; border-radius: 9px; border: 2px solid rgba(255,255,255,.7); background: #222 center/cover; box-shadow: 0 6px 18px rgba(0,0,0,.35); }
+.pv-photos-strip button.more { color: #fff; background: var(--glass-strong); font-weight: 600; }
+.pv-lightbox { position: fixed; inset: 0; z-index: 60; background: rgba(5,10,20,.92); display: grid; place-items: center; }
+.pv-lightbox img { max-width: 92vw; max-height: 84vh; border-radius: 10px; box-shadow: 0 20px 60px rgba(0,0,0,.5); }
+.pv-lightbox .nav { position: absolute; top: 50%; transform: translateY(-50%); width: 52px; height: 52px; border-radius: 50%; border: 1px solid var(--line); background: var(--glass); color: #fff; font-size: 28px; }
+.pv-lightbox .prev { left: 20px; } .pv-lightbox .next { right: 20px; }
+.pv-lightbox .cap { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); color: var(--muted); font-size: 13px; }
+@media (max-width: 760px) { .pv-photos { bottom: 160px; } .pv-photos-strip button { width: 56px; height: 42px; } }

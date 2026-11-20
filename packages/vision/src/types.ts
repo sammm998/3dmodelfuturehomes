@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { AmenityType, ImageClass, RoomType } from "@pv/shared";
+import { AmenityType, FacadeSpec, ImageClass, RoomType } from "@pv/shared";
 
 export const ClassificationOut = z.object({
   class: ImageClass,
@@ -55,6 +55,9 @@ export const MaterialsOut = z.object({
 });
 export type MaterialsOut = z.infer<typeof MaterialsOut>;
 
+export const ExteriorSpec = FacadeSpec;
+export type ExteriorSpec = FacadeSpec;
+
 export interface VisionImage {
   data: Buffer;
   /** filename / url / alt text: gives the heuristic provider something to work with */
@@ -67,4 +70,6 @@ export interface VisionProvider {
   analyzeFloorplan(img: VisionImage): Promise<FloorplanSemantics>;
   matchRoom(img: VisionImage, rooms: { id: string; name: string; type: string }[]): Promise<RoomMatch>;
   materials(img: VisionImage): Promise<MaterialsOut>;
+  /** read the building's exterior from one or more exterior photos */
+  exteriorSpec(imgs: VisionImage[]): Promise<ExteriorSpec>;
 }

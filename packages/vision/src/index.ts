@@ -40,6 +40,9 @@ export class ResilientVision implements VisionProvider {
   materials(img: VisionImage) {
     return this.run((p) => p.materials(img));
   }
+  exteriorSpec(imgs: VisionImage[]) {
+    return this.run((p) => p.exteriorSpec(imgs));
+  }
 }
 
 /** VISION_PROVIDER = anthropic | openai | heuristic | auto (default). */

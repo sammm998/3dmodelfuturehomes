@@ -6,7 +6,7 @@
  * Re-running is safe: demo rows are replaced.
  */
 import sharp from "sharp";
-import { demoVillaPlans, generateIllustrativePlans, planBounds, type PlanSpec } from "@pv/shared";
+import { demoVillaPlans, generateIllustrativePlans, planBounds, type FacadeSpec, type PlanSpec } from "@pv/shared";
 import {
   createJob,
   ensureBucket,
@@ -124,6 +124,7 @@ async function createProperty(opts: {
   floorsCount: number;
   unitFloorIndex: number | null;
   facadeColor: string;
+  facade: FacadeSpec;
   units?: { code: string; level: number; bedrooms: number; sqm: number; price: number; availability: string }[];
 }) {
   await q("delete from properties where slug=$1", [opts.slug]);
@@ -140,7 +141,7 @@ async function createProperty(opts: {
   const contextFloors = opts.floorsCount - opts.plans.length;
   const b = await one<{ id: string }>(
     "insert into buildings(property_id, name, floors_count, unit_floor_index, massing) values ($1,'Main building',$2,$3,$4) returning id",
-    [p!.id, opts.floorsCount, opts.unitFloorIndex, JSON.stringify({ facadeColor: opts.facadeColor, facadeFromPhoto: false, roof: "flat", floorsCount: opts.floorsCount, contextFloors, provenance: "illustrative" })],
+    [p!.id, opts.floorsCount, opts.unitFloorIndex, JSON.stringify({ facadeColor: opts.facadeColor, facadeFromPhoto: false, roof: opts.facade.roof, facade: opts.facade, floorsCount: opts.floorsCount, contextFloors, provenance: "illustrative" })],
   );
   let y = 0;
   for (const [i, raw] of opts.plans.entries()) {
@@ -214,7 +215,14 @@ async function main() {
     planStatus: "authored",
     floorsCount: 2,
     unitFloorIndex: null,
-    facadeColor: "#efe8dc",
+    facadeColor: "#f4f1ea",
+    // what the vision model returns for a modern Mediterranean villa photo (demo values)
+    facade: {
+      storeys: 2, roof: "flat", roofMaterial: "membrane", roofColor: "#d8d3ca", wallMaterial: "render", wallColor: "#f4f1ea",
+      accentMaterial: "stone", accentColor: "#c9b79c", accentPlacement: "ground_floor", windowStyle: "large_glazing",
+      windowFrameColor: "#2f3236", shutters: false, shutterColor: "#ffffff", balconies: "glass", roofTerrace: true,
+      pergola: true, pool: true, garden: true, style: "modern mediterranean villa", confidence: 0.9,
+    },
   });
 
   const [apt] = generateIllustrativePlans({ sqm: 92, bedrooms: 2, bathrooms: 2 });
@@ -235,7 +243,13 @@ async function main() {
     planStatus: "generated",
     floorsCount: 6,
     unitFloorIndex: 2,
-    facadeColor: "#f2f0ea",
+    facadeColor: "#efe6d6",
+    facade: {
+      storeys: 6, roof: "flat", roofMaterial: "membrane", roofColor: "#cfcac0", wallMaterial: "render", wallColor: "#efe6d6",
+      accentMaterial: "wood", accentColor: "#9a7451", accentPlacement: "entrance_wall", windowStyle: "floor_to_ceiling",
+      windowFrameColor: "#3b3b3b", shutters: false, shutterColor: "#ffffff", balconies: "glass", roofTerrace: false,
+      pergola: false, pool: true, garden: true, style: "contemporary residential", confidence: 0.9,
+    },
     units: [{ code: "2B", level: 2, bedrooms: 2, sqm: 92, price: 465000, availability: "Available" }],
   });
   console.log(`seeded: villa=${villa} apartment=${apartment}`);
