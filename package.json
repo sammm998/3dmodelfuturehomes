@@ -11,5 +11,10 @@
     "fixtures": "pnpm --filter @pv/shared exec tsx scripts/export-fixtures.ts",
     "db:migrate": "pnpm --filter @pv/api migrate",
     "db:seed": "pnpm --filter @pv/api seed"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
   }
 }
