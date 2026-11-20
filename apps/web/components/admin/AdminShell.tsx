@@ -13,7 +13,14 @@ const NAV = [
 export function AdminShell({ title, children, actions }: { title: string; children: React.ReactNode; actions?: React.ReactNode }) {
   const path = usePathname();
   const [token, setToken] = useState<string>("");
-  useEffect(() => setToken(localStorage.getItem("pv_admin_token") ?? ""), []);
+  const [needLogin, setNeedLogin] = useState(false);
+  const [draft, setDraft] = useState("");
+  useEffect(() => {
+    setToken(localStorage.getItem("pv_admin_token") ?? "");
+    const onUnauth = () => setNeedLogin(true);
+    window.addEventListener("pv-unauthorized", onUnauth);
+    return () => window.removeEventListener("pv-unauthorized", onUnauth);
+  }, []);
   return (
     <div className="adm">
       <aside className="adm-nav">
@@ -38,6 +45,25 @@ export function AdminShell({ title, children, actions }: { title: string; childr
           />
         </details>
       </aside>
+      {needLogin && (
+        <div className="adm-login">
+          <form
+            className="adm-card"
+            onSubmit={(e) => {
+              e.preventDefault();
+              localStorage.setItem("pv_admin_token", draft.trim());
+              location.reload();
+            }}
+          >
+            <h2>Logga in i admin</h2>
+            <p className="muted">
+              Klistra in din admin-token. Du hittar den i Railway: tjänsten <b>api</b> → <b>Variables</b> → <code>ADMIN_TOKEN</code>.
+            </p>
+            <input type="password" autoFocus placeholder="Admin-token" value={draft} onChange={(e) => setDraft(e.target.value)} required />
+            <button className="adm-btn primary">Logga in</button>
+          </form>
+        </div>
+      )}
       <main className="adm-main">
         <div className="adm-head">
           <h1>{title}</h1>

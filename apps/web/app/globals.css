@@ -347,3 +347,7 @@ input, select, textarea { font: inherit; }
 .pv-lightbox .prev { left: 20px; } .pv-lightbox .next { right: 20px; }
 .pv-lightbox .cap { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); color: var(--muted); font-size: 13px; }
 @media (max-width: 760px) { .pv-photos { bottom: 160px; } .pv-photos-strip button { width: 56px; height: 42px; } }
+.adm-login { position: fixed; inset: 0; z-index: 70; background: rgba(11,21,38,.55); display: grid; place-items: center; }
+.adm-login form { width: min(440px, calc(100vw - 32px)); display: flex; flex-direction: column; gap: 12px; }
+.adm-login h2 { margin: 0; font-family: var(--pv-font-heading); font-weight: 500; }
+.adm-login input { padding: 10px 12px; border: 1px solid var(--adm-line); border-radius: 9px; }

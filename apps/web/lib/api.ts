@@ -23,6 +23,10 @@ export async function api<T = any>(path: string, init: RequestInit = {}): Promis
   });
   if (res.status === 204) return undefined as T;
   const data = await res.json().catch(() => ({}));
+  if (res.status === 401 && typeof window !== "undefined") {
+    window.dispatchEvent(new Event("pv-unauthorized"));
+    throw Object.assign(new Error("Logga in med admin-token för att fortsätta."), { status: 401, data });
+  }
   if (!res.ok) throw Object.assign(new Error(data.message || data.error || `HTTP ${res.status}`), { status: res.status, data });
   return data as T;
 }
