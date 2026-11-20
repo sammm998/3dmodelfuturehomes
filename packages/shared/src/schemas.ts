@@ -248,3 +248,28 @@ export const FacadeSpec = z.object({
   confidence: z.number(),
 });
 export type FacadeSpec = z.infer<typeof FacadeSpec>;
+
+/** Where each building facade is in each exterior photo (normalised image coords, 0..1). */
+export const FacadeQuad = z.object({
+  imageIndex: z.number().describe("index of the photo in the order given"),
+  side: z.enum(["front", "left", "right", "back"]).describe("which side of the building this facade is, relative to the main/entrance facade"),
+  /** outline of the whole facade plane from ground to roof edge: top-left, top-right, bottom-right, bottom-left */
+  corners: z.array(z.array(z.number())).describe("[[x,y] top-left, top-right, bottom-right, bottom-left], normalised 0..1, x right, y down"),
+  storeys: z.number(),
+  visibleShare: z.number().describe("0..1 how much of this facade is visible / unobstructed"),
+});
+export type FacadeQuad = z.infer<typeof FacadeQuad>;
+export const FacadeQuads = z.object({
+  buildingType: z.enum(["house", "apartment_building", "townhouse_row", "other"]),
+  storeys: z.number(),
+  quads: z.array(FacadeQuad),
+});
+export type FacadeQuads = z.infer<typeof FacadeQuads>;
+
+/** A rectified photo of one building side, used as a texture on the exterior model. */
+export interface PhotoFacade {
+  side: "front" | "left" | "right" | "back";
+  key: string;
+  aspect: number; // width / height of the rectified facade
+  mediaId: string;
+}

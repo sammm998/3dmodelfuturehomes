@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import * as THREE from "three";
 import { layoutFurniture, planBounds, type FacadeSpec, type PlanSpec } from "@pv/shared";
 import { DEFAULT_FACADE, ExteriorDetails } from "./Exterior";
+import { PhotoBuilding, photoBuildingDims } from "./PhotoBuilding";
 import type { BuildingRef, ViewMode } from "@/lib/types";
 import { Furniture } from "./Furniture";
 import { buildFloorGeometry, floorSlab } from "./planMesh";
@@ -38,6 +39,12 @@ export function Building({ building, floors, mode, floorIndex, cutHeight, showFu
     [building.massing],
   );
   const facade = spec.wallColor;
+  const photo = useMemo(() => photoBuildingDims(building), [building]);
+  if (mode === "exterior" && photo) {
+    const b = planBounds(floors[0]?.plan ?? ({ walls: [], rooms: [] } as any));
+    const center: [number, number] = floors.length ? [(b.minX + b.maxX) / 2, (b.minY + b.maxY) / 2] : [0, 0];
+    return <PhotoBuilding dims={photo} center={center} fallbackColor={spec.wallColor} roofColor={spec.roofColor} />;
+  }
   const topIdx = floors.length - 1;
   return (
     <group>

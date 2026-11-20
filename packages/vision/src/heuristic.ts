@@ -1,6 +1,7 @@
 import type { RoomType } from "@pv/shared";
 import { dominantColor, imageStats } from "./prepare.js";
 import type { ExteriorSpec } from "./types.js";
+import type { FacadeQuads } from "@pv/shared";
 import type { ClassificationOut, FloorplanSemantics, MaterialsOut, RoomMatch, VisionImage, VisionProvider } from "./types.js";
 
 const ROOM_WORDS: [RoomType, RegExp][] = [
@@ -74,6 +75,11 @@ export class HeuristicVision implements VisionProvider {
       shutters: false, shutterColor: "#ffffff", balconies: "none", roofTerrace: false, pergola: false, pool: false, garden: true,
       style: "contemporary", confidence: 0.2,
     };
+  }
+
+  async facadeQuads(): Promise<FacadeQuads> {
+    // locating facades needs a vision model; offline the exterior keeps the parametric facade
+    return { buildingType: "other", storeys: 0, quads: [] };
   }
 
   async materials(img: VisionImage): Promise<MaterialsOut> {

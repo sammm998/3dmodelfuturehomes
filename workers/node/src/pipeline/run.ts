@@ -406,9 +406,36 @@ export async function runPipeline(job: PipelineJob) {
         if (ext.length) {
           spec = await vision.exteriorSpec(await Promise.all(ext.map(async (m) => ({ data: await getObject(m.s3_key), hint: fileHint(m) }))));
         }
+        // locate the facades in the photos and rectify them into textures (photo-textured exterior)
+        const photoFacades: any[] = [];
+        let buildingType: string | null = null;
+        if (ext.length) {
+          const all = (await mediaOf(propertyId, ["image"])).filter((m) => m.classification?.class === "exterior").slice(0, 6);
+          const fq = await vision.facadeQuads(await Promise.all(all.map(async (m) => ({ data: await getObject(m.s3_key), hint: fileHint(m) }))));
+          buildingType = fq.buildingType;
+          if (fq.storeys > 0 && spec) spec.storeys = Math.round(fq.storeys);
+          const area = (c: number[][]) =>
+            Math.abs(c.reduce((s, p, i) => s + p[0] * c[(i + 1) % c.length][1] - c[(i + 1) % c.length][0] * p[1], 0)) / 2;
+          const best = new Map<string, any>();
+          for (const q of fq.quads) {
+            if (q.corners?.length !== 4 || !all[q.imageIndex]) continue;
+            const score = area(q.corners) * (0.4 + 0.6 * q.visibleShare);
+            if (!best.has(q.side) || best.get(q.side).score < score) best.set(q.side, { ...q, score });
+          }
+          for (const [side, q] of best) {
+            const m = all[q.imageIndex];
+            try {
+              const r = await runPy<any>("facade.rectify", { key: m.s3_key, corners: q.corners, out: `properties/${propertyId}/facades/${side}.png` });
+              photoFacades.push({ side, key: r.key, aspect: r.aspect, roofLine: r.roofLine, mediaId: m.id });
+            } catch (e) {
+              console.warn("[facade] rectify failed", side, (e as Error).message);
+            }
+          }
+        }
         // whole houses: trust the photos for the storey count when no plan exists for some floors
         let floorsCount = b.floors_count;
-        if (spec && b.unit_floor_index == null && spec.storeys > 0 && spec.confidence >= 0.5) floorsCount = Math.max(floors.length, Math.round(spec.storeys));
+        if (spec && spec.storeys > 0 && (spec.confidence >= 0.5 || buildingType === "apartment_building"))
+          floorsCount = Math.max(floors.length, Math.round(spec.storeys));
         await q("update buildings set floors_count=$2 where id=$1", [b.id, floorsCount]);
         const massing = {
           facadeColor: spec?.wallColor ?? "#efe9df",
@@ -416,6 +443,8 @@ export async function runPipeline(job: PipelineJob) {
           roof: spec?.roof ?? "flat",
           facade: spec,
           heroMediaId: ext[0]?.id ?? null,
+          photoFacades,
+          buildingType,
           photoMediaIds: ext.map((m) => m.id),
           floorsCount,
           contextFloors: Math.max(0, floorsCount - floors.length),
@@ -433,7 +462,7 @@ export async function runPipeline(job: PipelineJob) {
           }
         }
         return spec
-          ? `${spec.style}: ${spec.wallMaterial} ${spec.wallColor}, ${spec.roof} roof, ${spec.balconies !== "none" ? spec.balconies + " balconies, " : ""}${floorsCount} storeys (from ${ext.length} photos, ${vision.name}${spec.confidence < 0.5 ? ", low confidence" : ""})${geo}`
+          ? `${photoFacades.length ? `photo facades: ${photoFacades.map((f) => f.side).join(", ")} · ` : ""}${spec.style}: ${spec.wallMaterial} ${spec.wallColor}, ${spec.roof} roof, ${spec.balconies !== "none" ? spec.balconies + " balconies, " : ""}${floorsCount} storeys (from ${ext.length} photos, ${vision.name}${spec.confidence < 0.5 ? ", low confidence" : ""})${geo}`
           : `no exterior photos: default facade, ${floorsCount} storeys${geo}`;
       });
     } else {

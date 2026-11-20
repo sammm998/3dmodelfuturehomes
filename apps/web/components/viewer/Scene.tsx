@@ -33,6 +33,8 @@ export interface SceneBounds {
   d: number;
   height: number;
   radius: number;
+  /** exterior is the photo-textured volume (front faces +z) */
+  photo?: boolean;
 }
 
 export function sceneBounds(floors: StackedFloor[], storeys = 1, unitFloorIndex: number | null = null): SceneBounds {
@@ -127,7 +129,7 @@ export function Scene({ property, floors, bounds, embedded, anchors }: { propert
       <PerformanceMonitor onDecline={() => setLowPerf(true)} onIncline={() => setLowPerf(false)} />
       <AdaptiveDpr pixelated={false} />
       <Lights property={property} bounds={bounds} hour={sunHour} />
-      {!inAR && mode !== "pano" && <Ground property={property} bounds={bounds} hasPool={hasPool && mode === "exterior"} floors={floors} />}
+      {!inAR && mode !== "pano" && <Ground property={property} bounds={bounds} hasPool={hasPool && mode === "exterior" && !bounds.photo} floors={floors} />}
       {!inAR && mode !== "pano" && <GradientSky />}
       {!inAR && mode !== "pano" && <fog attach="fog" args={["#e6ecf1", 120, 520]} />}
       <Environment resolution={128} frames={1} environmentIntensity={0.55}>
@@ -374,8 +376,8 @@ function CameraRig({ floors, bounds, property }: { floors: StackedFloor[]; bound
     const el = floor.elevation;
     if (mode === "exterior") {
       // three-quarter view onto the most glazed facade
-      const f = frontDirection(floors[0].plan, bounds);
-      const a = Math.PI / 5;
+      const f: Vec2 = (bounds as any).photo ? [0, 1] : frontDirection(floors[0].plan, bounds);
+      const a = Math.PI / 7;
       const dx = f[0] * Math.cos(a) - f[1] * Math.sin(a),
         dz = f[0] * Math.sin(a) + f[1] * Math.cos(a);
       c.setLookAt(bounds.cx + dx * E * 1.75, bounds.height * 0.6 + E * 0.5, bounds.cz + dz * E * 1.75, bounds.cx, bounds.height * 0.4, bounds.cz, true);

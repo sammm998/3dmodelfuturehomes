@@ -84,3 +84,19 @@ def test_provider_registry_without_gpu_or_keys(monkeypatch):
     assert choose("C", ReconstructionInputs(images=[b"x"] * 30)) is None or True
     monkeypatch.setenv("SPLAT_API_URL", "http://splat.local")
     assert choose("C", ReconstructionInputs(images=[b"x"] * 30)).name in ("gsplat_local", "http_splat")
+
+
+def test_facade_rectify_masks_sky_and_straightens():
+    from propertyverse_workers.panorama.facade import rectify
+    img = np.zeros((600, 800, 3), np.uint8)
+    img[:] = (235, 180, 120)  # sky (BGR, blue)
+    # a facade seen in perspective: trapezoid with an arched top
+    pts = np.array([[250, 120], [600, 160], [600, 560], [250, 580]], np.int32)
+    cv2.fillPoly(img, [pts], (170, 190, 205))
+    cv2.ellipse(img, (425, 150), (175, 60), 0, 180, 360, (235, 180, 120), -1)
+    png, meta = rectify(img, [[250 / 800, 90 / 600], [600 / 800, 90 / 600], [600 / 800, 570 / 600], [250 / 800, 580 / 600]])
+    out = cv2.imdecode(np.frombuffer(png, np.uint8), cv2.IMREAD_UNCHANGED)
+    assert out.shape[2] == 4
+    assert out[2, out.shape[1] // 2, 3] == 0  # sky above the facade is transparent
+    assert out[out.shape[0] // 2, out.shape[1] // 2, 3] == 255  # the wall is opaque
+    assert 0.5 < meta["aspect"] < 1.0 and meta["roofLine"] >= 0

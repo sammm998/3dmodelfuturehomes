@@ -1,8 +1,8 @@
 import OpenAI from "openai";
 import { z } from "zod";
 import { prepareImage } from "./prepare.js";
-import { CLASSIFY_PROMPT, EXTERIOR_PROMPT, FLOORPLAN_PROMPT, MATCH_PROMPT, MATERIALS_PROMPT } from "./prompts.js";
-import { FacadeSpec as ExteriorSpec } from "@pv/shared";
+import { CLASSIFY_PROMPT, EXTERIOR_PROMPT, FLOORPLAN_PROMPT, MATCH_PROMPT, MATERIALS_PROMPT, FACADE_QUADS_PROMPT } from "./prompts.js";
+import { FacadeQuads, FacadeSpec as ExteriorSpec } from "@pv/shared";
 import {
   ClassificationOut,
   FloorplanSemantics,
@@ -77,5 +77,8 @@ export class OpenAIVision implements VisionProvider {
   }
   exteriorSpec(imgs: VisionImage[]) {
     return this.ask(imgs.slice(0, 4), EXTERIOR_PROMPT, ExteriorSpec, "exterior");
+  }
+  facadeQuads(imgs: VisionImage[]) {
+    return this.ask(imgs.slice(0, 6), FACADE_QUADS_PROMPT, FacadeQuads, "facade_quads");
   }
 }

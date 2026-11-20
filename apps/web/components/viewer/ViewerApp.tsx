@@ -12,6 +12,7 @@ import { stackFloors } from "./Building";
 import { computeAnchors, LabelLayer } from "./Labels";
 import { RealPhotos } from "./Photos";
 import { poolPosition, sceneBounds, SceneRoot, xrStore } from "./Scene";
+import { photoBuildingDims } from "./PhotoBuilding";
 import { walkInput } from "./walkInput";
 
 type Variant = "full" | "embed" | "booth";
@@ -27,7 +28,12 @@ const MODES: { key: ViewMode; label: string; icon: string }[] = [
 export default function ViewerApp({ property, variant = "full", publicUrl }: { property: Property; variant?: Variant; publicUrl: string }) {
   const building = property.buildings[0];
   const floors = useMemo(() => stackFloors(building), [building]);
-  const bounds = useMemo(() => sceneBounds(floors, building?.floorsCount ?? 1, building?.unitFloorIndex ?? null), [floors, building]);
+  const photoDims = useMemo(() => photoBuildingDims(building), [building]);
+  const bounds = useMemo(() => {
+    const b = sceneBounds(floors, building?.floorsCount ?? 1, building?.unitFloorIndex ?? null);
+    // photo-textured exterior: frame the photo volume instead of the unit's plan
+    return photoDims ? { ...b, w: photoDims.W, d: photoDims.D, height: photoDims.H, radius: Math.hypot(photoDims.W, photoDims.D, photoDims.H) / 2, photo: true } : b;
+  }, [floors, building, photoDims]);
   const v = useViewer();
   const theme = property.agency?.theme;
   const panoRooms = useMemo(
@@ -48,7 +54,7 @@ export default function ViewerApp({ property, variant = "full", publicUrl }: { p
         property,
         floors,
         { mode: v.mode, floorIndex: v.floorIndex, showHotspots: v.showHotspots, panoRoomId: v.panoRoomId },
-        hasPool && floors.length ? (([x, , z]) => [x, 0.4, z] as [number, number, number])(poolPosition(floors, bounds)) : null,
+        hasPool && floors.length && !photoDims ? (([x, , z]) => [x, 0.4, z] as [number, number, number])(poolPosition(floors, bounds)) : null,
       ),
     [property, floors, v.mode, v.floorIndex, v.showHotspots, v.panoRoomId, hasPool, bounds],
   );
@@ -243,7 +249,14 @@ function currentProvenance(property: Property, mode: ViewMode, furniture: boolea
     if (mode !== "exterior") parts.push({ label: "Floor materials & wall colours", p: "illustrative" });
     if (mode !== "exterior" && furniture) parts.push({ label: "Furniture", p: "illustrative" });
     if (mode === "exterior")
-      parts.push({ label: b.massing?.facade ? "Facade & roof modelled from the listing photos" : "Facade, roof & surroundings", p: "illustrative" });
+      parts.push({
+        label: b.massing?.photoFacades?.length
+          ? "Facades are the listing photos, straightened onto a simplified volume"
+          : b.massing?.facade
+            ? "Facade & roof modelled from the listing photos"
+            : "Facade, roof & surroundings",
+        p: "illustrative",
+      });
     if (b.floorsCount > b.floors.length) parts.push({ label: "Other storeys of the building", p: "illustrative" });
     if (photoreal) parts.push({ label: "Photoreal layer", p: property.artifacts.find((a) => a.kind === "splat")?.provenance ?? "reconstructed" });
   }

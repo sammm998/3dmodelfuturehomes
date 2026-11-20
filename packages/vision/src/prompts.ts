@@ -37,6 +37,14 @@ Describe the building so it can be modelled in 3D as faithfully as possible:
 - shutters (and colour), balconies (type), roof terrace, pergola, pool, garden.
 Only report what you can see. Use the photo where the building is most visible for colours.`;
 
+export const FACADE_QUADS_PROMPT = `These are exterior photos/renders of ONE building from a property listing, numbered from 0 in the order given.
+For each photo, find every facade (flat side wall) of the MAIN building that is clearly visible, and give its outline as
+four corners in normalised image coordinates (x to the right, y down, 0..1): top-left, top-right, bottom-right, bottom-left.
+The outline must cover the whole facade from the ground line to the top of the wall/parapet (follow the building edges even if
+trees or cars cover parts). side = front (the main / entrance / most photographed facade), left, right or back, consistent across photos.
+Also: buildingType, storeys (count of full storeys above ground incl. the ground floor), visibleShare (0..1, unobstructed share).
+Skip facades seen at a very sharp angle (narrower than 10% of the image width).`;
+
 export const MATERIALS_PROMPT = `Look at this interior photo and describe surface materials for a 3D reconstruction.
 floor.kind: wood | tile | stone | concrete | carpet | unknown; floor.colorHex: dominant floor colour as #rrggbb.
 wallColorHex: dominant wall paint colour as #rrggbb. style: 2-4 words (e.g. "modern mediterranean").`;

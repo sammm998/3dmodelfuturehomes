@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { AmenityType, FacadeSpec, ImageClass, RoomType } from "@pv/shared";
+import { AmenityType, FacadeSpec, ImageClass, RoomType, type FacadeQuads } from "@pv/shared";
 
 export const ClassificationOut = z.object({
   class: ImageClass,
@@ -72,4 +72,6 @@ export interface VisionProvider {
   materials(img: VisionImage): Promise<MaterialsOut>;
   /** read the building's exterior from one or more exterior photos */
   exteriorSpec(imgs: VisionImage[]): Promise<ExteriorSpec>;
+  /** locate each building facade in the photos (for photo-textured exteriors) */
+  facadeQuads(imgs: VisionImage[]): Promise<FacadeQuads>;
 }

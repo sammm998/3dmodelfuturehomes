@@ -79,6 +79,13 @@ def _blocking(name: str, data: dict) -> dict:
         storage.put(key, art.data, art.content_type)
         return {"key": key, "kind": art.kind, "format": art.ext, "provider": res.provider, "provenance": res.provenance}
 
+    if name == "facade.rectify":
+        from .panorama.facade import rectify
+
+        png, meta = rectify(decode_image(storage.get(data["key"])), data["corners"])
+        storage.put(data["out"], png, "image/png")
+        return {**meta, "key": data["out"]}
+
     if name == "providers.describe":
         return {"providers": describe()}
 

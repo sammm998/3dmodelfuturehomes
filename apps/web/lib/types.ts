@@ -1,4 +1,4 @@
-import type { AgencyTheme, FacadeSpec, PlanSpec, Provenance } from "@pv/shared";
+import type { AgencyTheme, FacadeSpec, PhotoFacade, PlanSpec, Provenance } from "@pv/shared";
 
 export interface ArtifactRef {
   id: string;
@@ -43,6 +43,8 @@ export interface BuildingRef {
     facadeFromPhoto?: boolean;
     roof?: string;
     facade?: FacadeSpec | null;
+    photoFacades?: PhotoFacade[];
+    buildingType?: string | null;
     heroMediaId?: string | null;
     photoMediaIds?: string[];
     floorsCount?: number;
