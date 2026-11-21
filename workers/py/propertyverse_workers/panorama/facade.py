@@ -9,9 +9,47 @@ import cv2
 import numpy as np
 
 
-def rectify(img: np.ndarray, corners: list[list[float]], max_side: int = 2048) -> tuple[bytes, dict]:
+def _line_score(grad: np.ndarray, p0: np.ndarray, p1: np.ndarray, n: int = 60) -> float:
+    h, w = grad.shape
+    t = np.linspace(0.08, 0.92, n)
+    xs = np.clip((p0[0] + (p1[0] - p0[0]) * t).astype(int), 0, w - 1)
+    ys = np.clip((p0[1] + (p1[1] - p0[1]) * t).astype(int), 0, h - 1)
+    return float(grad[ys, xs].mean())
+
+
+def refine_corners(img: np.ndarray, src: np.ndarray, search: float = 0.05) -> np.ndarray:
+    """Snap the facade's left and right edges to the strongest nearby vertical building edges.
+
+    The vision model's corners are approximate; building corners are strong, long, near-vertical
+    intensity edges. Each side edge (top point + bottom point) is shifted independently within a
+    window of +-search * facade width and the shift with the highest mean edge strength wins.
+    """
+    gray = cv2.GaussianBlur(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY), (3, 3), 0)
+    grad = np.abs(cv2.Sobel(gray, cv2.CV_32F, 1, 0, ksize=3))
+    tl, tr, br, bl = src.copy()
+    width = (np.linalg.norm(tr - tl) + np.linalg.norm(br - bl)) / 2
+    r = max(3.0, search * width)
+    steps = np.linspace(-r, r, 17)
+    out = src.copy()
+    for top_i, bot_i in ((0, 3), (1, 2)):
+        best, best_s = (0.0, 0.0), _line_score(grad, src[top_i], src[bot_i])
+        for dt in steps:
+            for db in steps:
+                p0 = src[top_i] + [dt, 0]
+                p1 = src[bot_i] + [db, 0]
+                sc = _line_score(grad, p0, p1)
+                if sc > best_s * 1.05:
+                    best, best_s = (dt, db), sc
+        out[top_i] = src[top_i] + [best[0], 0]
+        out[bot_i] = src[bot_i] + [best[1], 0]
+    return out
+
+
+def rectify(img: np.ndarray, corners: list[list[float]], max_side: int = 2048, refine: bool = True) -> tuple[bytes, dict]:
     h, w = img.shape[:2]
     src = np.array([[c[0] * w, c[1] * h] for c in corners], np.float32)
+    if refine:
+        src = refine_corners(img, src).astype(np.float32)
     tl, tr, br, bl = src
     width = (np.linalg.norm(tr - tl) + np.linalg.norm(br - bl)) / 2
     height = (np.linalg.norm(bl - tl) + np.linalg.norm(br - tr)) / 2
@@ -35,6 +73,7 @@ def rectify(img: np.ndarray, corners: list[list[float]], max_side: int = 2048) -
     return enc.tobytes(), {
         "width": W, "height": H, "aspect": round(W / H, 4),
         "skyShare": round(float((alpha == 0).mean()), 4), "roofLine": round(roof_line, 4),
+        "corners": [[round(float(x) / w, 4), round(float(y) / h, 4)] for x, y in src],
     }
 
 

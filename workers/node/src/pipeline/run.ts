@@ -419,7 +419,12 @@ export async function runPipeline(job: PipelineJob) {
           const best = new Map<string, any>();
           for (const q of fq.quads) {
             if (q.corners?.length !== 4 || !all[q.imageIndex]) continue;
-            const score = area(q.corners) * (0.4 + 0.6 * q.visibleShare);
+            // prefer big, unobstructed and straight-on views: equal left/right edge heights, level top edge
+            const [tl, tr, br, bl] = q.corners;
+            const hl = Math.hypot(bl[0] - tl[0], bl[1] - tl[1]),
+              hr = Math.hypot(br[0] - tr[0], br[1] - tr[1]);
+            const frontal = (Math.min(hl, hr) / Math.max(hl, hr, 1e-6)) * (1 - Math.min(0.8, Math.abs(tr[1] - tl[1]) * 2));
+            const score = area(q.corners) * (0.4 + 0.6 * q.visibleShare) * (0.3 + 0.7 * frontal);
             if (!best.has(q.side) || best.get(q.side).score < score) best.set(q.side, { ...q, score });
           }
           for (const [side, q] of best) {
